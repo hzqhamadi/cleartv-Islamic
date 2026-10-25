@@ -44,6 +44,11 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon testReleaseUnitTest assembleRelease
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: islamic-apk
+          path: launcher/app/build/outputs/apk/release/app-release.apk  
       - name: The launcher stays small
         run: |
           size=$(stat -c %s launcher/app/build/outputs/apk/release/app-release.apk)
