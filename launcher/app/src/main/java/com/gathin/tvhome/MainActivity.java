@@ -130,7 +130,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView shamsiDate;
     private boolean shamsi;
     /** Today's prayer times under the clock (PrayerTimes); hidden while prayerZone is empty. */
-    private TextView prayerRow;
+    private View prayerRow;
+    private TextView prayerTitle, prayerCountdown, hijriDate;
+    private final TextView[] prayerTimeViews = new TextView[5];
+    private final TextView[] prayerNameViews = new TextView[5];
     private String prayerZone;
     private boolean prayerRefreshRunning;
     /** The azan over Home at prayer times; null when the theme turns it off or has no prayer_zone. */
@@ -320,6 +323,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             date.setPadding(0, (int) (4 * density), 0, 0);
         }
         prayerRow = findViewById(R.id.prayerRow);
+        prayerTitle = findViewById(R.id.prayerTitle);
+        prayerCountdown = findViewById(R.id.prayerCountdown);
+        hijriDate = findViewById(R.id.hijriDate);
+        prayerTimeViews[0] = findViewById(R.id.pt0);
+        prayerNameViews[0] = findViewById(R.id.pn0);
+        prayerTimeViews[1] = findViewById(R.id.pt1);
+        prayerNameViews[1] = findViewById(R.id.pn1);
+        prayerTimeViews[2] = findViewById(R.id.pt2);
+        prayerNameViews[2] = findViewById(R.id.pn2);
+        prayerTimeViews[3] = findViewById(R.id.pt3);
+        prayerNameViews[3] = findViewById(R.id.pn3);
+        prayerTimeViews[4] = findViewById(R.id.pt4);
+        prayerNameViews[4] = findViewById(R.id.pn4);
         prayerZone = cfg.prayerZone;
         if (cfg.azan && !prayerZone.isEmpty()) {
             azan = new Azan(root, () -> {
@@ -1525,6 +1541,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         PrayerTimes.Day today = PrayerTimes.day(this, prayerZone, todayKey);
         if (today == null) {
             prayerRow.setVisibility(View.GONE);
+            hijriDate.setVisibility(View.GONE);
             if (!prayerRefreshRunning && PrayerTimes.due(this, prayerZone, todayKey)) {
                 prayerRefreshRunning = true;
                 final String zone = prayerZone;
@@ -1552,27 +1569,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             left = 24 * 60 - nowMin + (tomorrow != null ? tomorrow : today).minutes[0];
         }
         boolean is24 = android.text.format.DateFormat.is24HourFormat(this);
-        int bright = 0xFFFFFFFF, dim = 0x80FFFFFF;
-        android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder();
-        if (!today.hijri.isEmpty()) {
-            b.append(today.hijri);
-            b.setSpan(new android.text.style.ForegroundColorSpan(dim), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            b.append("     ");
+        int bright = 0xFFFFFFFF, dim = 0x99FFFFFF, gold = 0xFFFFC857;
+        if (today.hijri.isEmpty()) {
+            hijriDate.setVisibility(View.GONE);
+        } else {
+            hijriDate.setText(today.hijri + "H");
+            hijriDate.setVisibility(View.VISIBLE);
         }
-        for (int i = 0; i < today.minutes.length; i++) {
-            if (i > 0) b.append("    ");
-            int start = b.length();
-            b.append(PrayerTimes.NAMES[i]).append("  ").append(PrayerTimes.format(today.minutes[i], is24));
-            if (i == next) {
-                b.setSpan(new android.text.style.ForegroundColorSpan(bright), start, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                b.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
+        prayerTitle.setText("SOLAT \u00b7 " + prayerZone);
+        for (int i = 0; i < prayerTimeViews.length && i < today.minutes.length; i++) {
+            prayerTimeViews[i].setText(PrayerTimes.format(today.minutes[i], is24));
+            prayerTimeViews[i].setTextColor(i == next ? gold : bright);
+            prayerNameViews[i].setText(PrayerTimes.NAMES[i]);
+            prayerNameViews[i].setTextColor(i == next ? gold : dim);
         }
-        b.append("     ");
-        int start = b.length();
-        b.append(PrayerTimes.NAMES[next >= 0 ? next : 0]).append(" ").append(PrayerTimes.countdown(left));
-        b.setSpan(new android.text.style.ForegroundColorSpan(bright), start, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        prayerRow.setText(b);
+        prayerCountdown.setText(PrayerTimes.NAMES[next >= 0 ? next : 0] + " " + PrayerTimes.countdown(left));
         prayerRow.setVisibility(View.VISIBLE);
     }
 
